@@ -1,0 +1,26 @@
+# App configuration
+App:
+  name: "{{cookiecutter.repo_name}}"
+  version: "{{cookiecutter.version}}"
+  port: 8009
+  read_timeout: 5 # seconds
+  write_timeout: 10 # seconds
+  timezone: Asia/Jakarta
+  debug: false # (true|false)
+  env: staging # ('development'|'staging'|'production')
+  secret_key: sekret
+  expire_in: 40000
+
+CB:
+  retry_count: 3
+  db_timeout: 30
+  max_concurrent: 5
+
+DB:
+  max_life_time: 30
+  max_idle_connection: 1
+  max_open_connection: 2
+
+Rest:
+  version: v1
+  prefix: "{{cookiecutter.prefix}}"

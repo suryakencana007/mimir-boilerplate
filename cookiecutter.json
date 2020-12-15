@@ -1,0 +1,18 @@
+{
+    "repo_path": "project/root/path/to/here",
+    "repo_name": "barbatos",
+    "prefix": "barbatos",
+    "timezone": "UTC",
+    "open_source_license": [
+        "MIT",
+        "BSD",
+        "GPLv3",
+        "Apache Software License 2.0",
+        "Not open source"
+    ],
+    "author_name": "Nanang Suryadi",
+    "email": "nanang.suryadi@aegis.gg",
+    "release_date": "2020-06-01",
+    "year": "2020",
+    "version": "0.1.0"
+}

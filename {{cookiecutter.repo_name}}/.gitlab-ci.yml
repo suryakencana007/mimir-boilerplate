@@ -1,0 +1,98 @@
+image: golangci/golangci-lint:latest
+
+variables:
+  REGISTRY_IMAGE: ${REGISTRY_HOME}/services/${CI_PROJECT_NAME}
+
+# Cache modules in between jobs
+cache:
+  key: ${CI_COMMIT_REF_SLUG}
+  paths:
+    - /go/src/github.com
+    - /go/src/golang.org
+    - /go/src/google.golang.org
+    - /go/src/gopkg.in
+    - tests/mocks
+
+before_script:
+  - mkdir -p $HOME/.ssh
+  - touch $HOME/.ssh/config
+  - echo $SSH_PRIVATE_KEY  > $HOME/.ssh/id_rsa
+  - chmod 600 $HOME/.ssh/id_rsa
+  - echo "IdentityFile $HOME/.ssh/id_rsa" > $HOME/.ssh/config
+  - git config --global url."https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com/".insteadOf https://gitlab.com/
+  - export GOPROXY=direct
+  - export GOSUMDB=off
+
+after_script:
+  - rm -rf $HOME/.docker
+  - rm -rf $HOME/.ssh/id_rsa
+
+.test-template: &test-template
+  stage: tests
+  except:
+    refs:
+      - tags
+      - master
+    variables:
+      - $CI_COMMIT_MESSAGE =~ /\[skip[ _-]tests?\]/i
+      - $SKIP_TESTS
+
+stages:
+  - lint
+  - test
+  - coverage
+  - coverage_report
+  - build
+
+unit_tests:
+  <<: *test-template
+  stage: test
+  script:
+    - make test
+  tags:
+    - aws
+
+lint_code:
+  <<: *test-template
+  stage: lint
+  script:
+    - make lint
+  tags:
+    - aws
+
+code_coverage:
+  <<: *test-template
+  stage: coverage
+  coverage: /total:\s+\(statements\)\s+(\d+.\d+\%)/
+  script:
+    - chmod +x ./coverage.sh
+    - make coverage
+  tags:
+    - aws
+
+code_coverage_report:
+  <<: *test-template
+  stage: coverage_report
+  coverage: /total:\s+\(statements\)\s+(\d+.\d+\%)/
+  script:
+    - chmod +x ./coverage.sh
+    - make coverhtml
+  only:
+    - master
+  tags:
+    - aws
+
+staging_build:
+  services:
+    - docker:19.03.8-dind
+  image: docker:latest
+  stage: build
+  only:
+    - master
+  before_script:
+    - ""
+  script:
+    - echo ${SSH_PRIVATE_KEY}
+    - docker login ${REGISTRY_HOME} -u ${DOCKER_LOGIN} -p ${DOCKER_PASSWORD}
+    - docker build --build-arg SSH_PRIVATE_KEY="${SSH_PRIVATE_KEY}" -t ${REGISTRY_IMAGE}:latest .
+    - docker push ${REGISTRY_IMAGE}:latest
